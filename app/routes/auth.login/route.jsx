@@ -1,65 +1,18 @@
-import { useState } from "react";
-import { Form, useActionData, useLoaderData } from "@remix-run/react";
-import {
-  AppProvider as PolarisAppProvider,
-  Button,
-  Card,
-  FormLayout,
-  Page,
-  Text,
-  TextField,
-} from "@shopify/polaris";
-import polarisTranslations from "@shopify/polaris/locales/en.json";
-import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
-import { login } from "../../shopify.server";
-import { loginErrorMessage } from "./error.server";
-
-export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
+import { authenticate } from "../shopify.server";
+import { saveShopSession } from "~/db/sessionService"; // adjust if your path is different
+import { redirect } from "@remix-run/node";
 
 export const loader = async ({ request }) => {
-  const errors = loginErrorMessage(await login(request));
+  const session = await authenticate.admin(request);
 
-  return { errors, polarisTranslations };
+  if (session?.shop && session?.accessToken) {
+    await saveShopSession({
+      shop: session.shop,
+      accessToken: session.accessToken,
+      scope: session.scope,
+      expires: session.expires, // this may be null if offline tokens
+    });
+  }
+
+  return redirect("/"); // or wherever you want to land after login
 };
-
-export const action = async ({ request }) => {
-  const errors = loginErrorMessage(await login(request));
-
-  return {
-    errors,
-  };
-};
-
-export default function Auth() {
-  const loaderData = useLoaderData();
-  const actionData = useActionData();
-  const [shop, setShop] = useState("");
-  const { errors } = actionData || loaderData;
-
-  return (
-    <PolarisAppProvider i18n={loaderData.polarisTranslations}>
-      <Page>
-        <Card>
-          <Form method="post">
-            <FormLayout>
-              <Text variant="headingMd" as="h2">
-                Log in
-              </Text>
-              <TextField
-                type="text"
-                name="shop"
-                label="Shop domain"
-                helpText="example.myshopify.com"
-                value={shop}
-                onChange={setShop}
-                autoComplete="on"
-                error={errors.shop}
-              />
-              <Button submit>Log in</Button>
-            </FormLayout>
-          </Form>
-        </Card>
-      </Page>
-    </PolarisAppProvider>
-  );
-}
