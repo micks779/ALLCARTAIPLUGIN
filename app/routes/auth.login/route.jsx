@@ -1,5 +1,5 @@
-import { authenticate } from "../shopify.server";
-import { saveShopSession } from "~/db/sessionService"; // adjust if your path is different
+import { authenticate } from "../../shopify.server";
+import { saveShopSession } from "../../db/sessionService"; // adjust if your path is different
 import { redirect } from "@remix-run/node";
 
 export const loader = async ({ request }) => {
